@@ -52,6 +52,7 @@ static void convolution_a1w1(benchmark::State& state, const char* net){
     // generate the bias,
     std::vector<uint8_t> output(batch_size * output_height * output_width * output_channels);
 
+    std::cout << "out..." << std::endl;
 
 }
 
@@ -183,7 +184,7 @@ static void VGG(benchmark::internal::Benchmark* b) {
 
 BENCHMARK_CAPTURE(convolution_a1w1, vgg, "VGG")->Apply(VGG);
 
-
+BENCHMARK_MAIN();
 
 
 
