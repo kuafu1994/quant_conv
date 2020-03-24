@@ -6,6 +6,8 @@ set(ENV{HTTP_PROXY} "http://proxy.cse.cuhk.edu.hk:8000")
 SET(ENV{HTTPS_PROXY} "http://proxy.cse.cuhk.edu.hk:8000")
 set(CMAKE_CXX_STANDARD 11)
 
+
+ENABLE_TESTING()
 # Build Google Test.
 
 MESSAGE(STATUS "Start to build GoogleTest")
@@ -25,12 +27,9 @@ EXECUTE_PROCESS(COMMAND "${CMAKE_COMMAND}" --build .
         WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/googlebenchmark-download")
 SET(GOOGLEBENCHMARK_SOURCE_DIR "${CMAKE_SOURCE_DIR}/googlebenchmark" CACHE STRING "Google Benchmark source directory")
 
-add_executable(bench-conv benchmark.cpp)
-SET_TARGET_PROPERTIES(bench-conv PROPERTIES
-        CXX_STANDARD 11
-        CXX_STANDARD_REQUIRED YES
-        CXX_EXTENSIONS NO)
-target_link_libraries(bench-conv PRIVATE benchmark)
+SET(FLYCONV_SRCS
+        detect_arm.cpp
+        convolution_quant.cpp)
 
 
 # --- [build google test
@@ -47,3 +46,23 @@ IF(NOT TARGET benchmark)
             "${GOOGLEBENCHMARK_SOURCE_DIR}"
             "${CMAKE_BINARY_DIR}/googlebenchmark")
 ENDIF()
+
+add_library(flyconv SHARED ${FLYCONV_SRCS})
+
+add_executable(bench-conv benchmark.cpp convolution_quant.cpp detect_arm.cpp)
+SET_TARGET_PROPERTIES(bench-conv PROPERTIES
+        CXX_STANDARD 11
+        CXX_STANDARD_REQUIRED YES
+        CXX_EXTENSIONS NO)
+target_link_libraries(bench-conv PRIVATE benchmark)
+
+
+add_executable(test-conv convolution-test.cpp)
+
+SET_TARGET_PROPERTIES(test-conv PROPERTIES
+        CXX_STANDARD 11
+        CXX_STANDARD_REQUIRED YES
+        CXX_EXTENSIONS NO)
+
+target_link_libraries(test-conv PRIVATE gtest gtest_main)
+add_test(test-conv test-conv)
