@@ -1,0 +1,1 @@
+/usr/bin/aarch64-linux-gnu-g++-7 -fPIC -g  -shared -Wl,-soname,libflyconv.so -o libflyconv.so CMakeFiles/flyconv.dir/convolution.cpp.o CMakeFiles/flyconv.dir/convolution_quant.cpp.o CMakeFiles/flyconv.dir/indirection.cpp.o 

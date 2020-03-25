@@ -28,8 +28,9 @@ EXECUTE_PROCESS(COMMAND "${CMAKE_COMMAND}" --build .
 SET(GOOGLEBENCHMARK_SOURCE_DIR "${CMAKE_SOURCE_DIR}/googlebenchmark" CACHE STRING "Google Benchmark source directory")
 
 SET(FLYCONV_SRCS
-        detect_arm.cpp
-        convolution_quant.cpp)
+        convolution.cpp
+        convolution_quant.cpp
+        indirection.cpp)
 
 
 # --- [build google test

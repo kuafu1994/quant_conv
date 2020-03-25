@@ -1,0 +1,36 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/pfzhang/workspace/quant_conv/convolution.cpp
+assert.h
+-
+math.h
+-
+stdbool.h
+-
+stddef.h
+-
+stdint.h
+-
+stdlib.h
+-
+string.h
+-
+iostream
+-
+convolution.h
+/home/pfzhang/workspace/quant_conv/convolution.h
+pack.h
+/home/pfzhang/workspace/quant_conv/pack.h
+
+/home/pfzhang/workspace/quant_conv/convolution.h
+
+/home/pfzhang/workspace/quant_conv/pack.h
+math.h
+/home/pfzhang/workspace/quant_conv/math.h
+

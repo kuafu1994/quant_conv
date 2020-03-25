@@ -205,6 +205,7 @@ public:
         // Only in the worst case, we will use int32_t to accumulate the values.
         std::vector<uint32_t> accumulators(batch_size_ * outputHeight() * outputWidth() * output_channels_);
 
+        std::vector<uint32_t> results(batch_size_ * outputHeight() * outputWidth() * output_channels_);
 
         // Here, we set input_zero_point as activation_max/2, for example, if the number of activation bits is 4,
         // then the activation_max is 2^4-1=15 and the input_zero_point is 7.
@@ -247,10 +248,29 @@ public:
                 } // for oy
             } // for i
 
-            // These two statements will be replaced by the implementation.
-            std::vector<uint32_t> results(batch_size_ * outputHeight() * outputWidth() * output_channels_);
-            std::fill(results.begin(), results.end(), 0);
+            conv_operator_t convolution;
+           // The convolution code here.
 
+           // create the conv2d pipeline here.
+           ASSERT_EQ(true, quant_conv::quant_conv2d_create_pipeline(
+                padding_top_, padding_bottom_, padding_left_, padding_right,
+                kernel_height_, kernel_width_, stride_height_, stride_width_, 
+                input_channels_, output_channels_, 
+                input_zero_point, kernel_zero_point,
+                kernel.data(), &convolution
+           ));
+
+           // setup the conv2d.
+           
+           size_t input_pixel_stride = input_channels_;
+           size_t output_pixel_stride = output_channels_;
+           ASSERT_EQ(true, quant_conv::quant_conv2d_setup_nhwc(
+               batch_size_, input_height_, input_width_, input.data(),
+               input_pixel_stride, results.data(), output_pixel_stride
+           ));
+
+           ASSERT_EQ(true, quant_conv_run_conv2d(convolution));
+        
 
             for(size_t i = 0; i < batch_size_; i ++){
                 for(size_t y = 0; y < outputHeight(); y++) {

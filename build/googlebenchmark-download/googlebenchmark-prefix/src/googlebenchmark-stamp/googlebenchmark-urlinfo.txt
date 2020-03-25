@@ -1,0 +1,3 @@
+repository='external project URL'
+module='https://github.com/google/benchmark/archive/v1.4.1.zip'
+tag='SHA256=61ae07eb5d4a0b02753419eb17a82b7d322786bb36ab62bd3df331a4d47c00a7'
