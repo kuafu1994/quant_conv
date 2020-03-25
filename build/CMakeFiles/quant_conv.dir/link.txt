@@ -1,2 +1,0 @@
-/usr/bin/ar qc libquant_conv.a  CMakeFiles/quant_conv.dir/convolution.cpp.o
-/usr/bin/ranlib libquant_conv.a
