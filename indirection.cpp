@@ -1,5 +1,7 @@
 
 #include <stddef.h>
+
+#include "convolution.h"
 #include "math.h"
 
 namespace quant_conv {
@@ -11,7 +13,7 @@ namespace quant_conv {
     ){
         const void** indirection_buffer   = op->indirection_buffer;
         const void* input                 = op->input;
-        const size_t input_pixel_stride   = op->input_pixel_stride;
+        //const size_t input_pixel_stride   = op->input_pixel_stride;
         const void* zero                  = op->zero_pointer;
         const size_t input_channels       = op->input_channels;
         const size_t batch_size           = op->batch_size;
@@ -43,20 +45,20 @@ namespace quant_conv {
                     
                     for(size_t kernel_y = 0; kernel_y < kernel_height; kernel_y ++){
                         
-                        const size_t input_y = output_y * stride_height - input_padding_top;
+                        const size_t input_y = output_y * stride_height + kernel_y - input_padding_top;
                         
                         if(input_y < input_height) {
                             
                             for(size_t kernel_x = 0; kernel_x < kernel_width; kernel_x ++){
                                 
-                                const size_t input_x = output_x * stride_width - input_padding_left;
+                                const size_t input_x = output_x * stride_width + kernel_x - input_padding_left;
                                 //const size_t index = image * tiled_output_size * kernel_size + tile_start * kernel_size + (kernel_y * kernel_width + kernel_x) * output_tile_size + output_tile_offset;
 
                                 // batch_size –> tile_outer -> kernel_size-> tile_offset
                                 const size_t index = image * tiled_output_size * kernel_size + tile_start * kernel_size + (kernel_y * kernel_width + kernel_x) * output_tile_size + tile_offset;
                                 if(input_x < input_width){
                                     // The input layout is NHWC.
-                                    indirection_buffer[index] = (char*)input + ((image * input_height + input_y) * input_width + input_x) * input_pixel_stride;
+                                    indirection_buffer[index] = (int8_t*)input + ((image * input_height + input_y) * input_width + input_x) * input_channels;
                                 } else {
                                     indirection_buffer[index] = zero;
                                 }

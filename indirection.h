@@ -2,6 +2,7 @@
 #ifndef INDIRECTION_H
 #define INDIRECTION_H
 
+#include "convolution.h"
 
 namespace quant_conv {
     

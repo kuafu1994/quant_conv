@@ -13,7 +13,9 @@
 #include <random>
 #include <vector>
 #include <gtest/gtest.h>
-
+#include <stdint.h>
+#include "convolution.h"
+#include <iostream>
 class ConvolutionOperatorTester {
 public:
     inline ConvolutionOperatorTester& padding(uint32_t padding){
@@ -191,53 +193,76 @@ public:
         std::random_device rd;
         auto rng = std::mt19937(rd());
 
-        uint32_t activation_max = (1 << activation_bits_) - 1;
-        uint32_t weight_max = (1 << weight_bits_) - 1;
-        auto activation_rng = std::bind(std::uniform_int_distribution<uint8_t>(0, activation_max), rng);
-        auto weight_rng = std::bind(std::uniform_int_distribution<uint8_t>(0, weight_max), rng);
+        int32_t activation_max = (1 << activation_bits_ - 1) - 1;
+        int32_t activation_min = -activation_max;
+        int32_t weight_max = (1 << weight_bits_ - 1) - 1;
+        int32_t weight_min = -weight_max;
+        auto activation_rng = std::bind(std::uniform_int_distribution<int8_t>( activation_min, activation_max), rng);
+        auto weight_rng = std::bind(std::uniform_int_distribution<int8_t>(weight_min, weight_max), rng);
 
         // Here, we assume that the storage layout of input is HWC.
-        std::vector<uint8_t> input(batch_size_ * input_width_ * input_height_ * input_channels_);
+        std::vector<int8_t> input(batch_size_ * input_width_ * input_height_ * input_channels_);
         // Here, we assume that the kernel layout is OHWI.
-        std::vector<uint8_t> kernel(output_channels_ * kernel_height_ * kernel_width_ * input_channels_);
-        std::vector<uint8_t> output(batch_size_ * outputHeight() * outputWidth() * output_channels_);
+        std::vector<int8_t> kernel(output_channels_ * kernel_height_ * kernel_width_ * input_channels_);
+
+        std::vector<int8_t> output(batch_size_ * outputHeight() * outputWidth() * output_channels_);
 
         // Only in the worst case, we will use int32_t to accumulate the values.
-        std::vector<uint32_t> accumulators(batch_size_ * outputHeight() * outputWidth() * output_channels_);
+        std::vector<int32_t> results_ref(batch_size_ * outputHeight() * outputWidth() * output_channels_);
 
-        std::vector<uint32_t> results(batch_size_ * outputHeight() * outputWidth() * output_channels_);
+        // We will store the results in these vector.
+        std::vector<int32_t> results(batch_size_ * outputHeight() * outputWidth() * output_channels_);
 
-        // Here, we set input_zero_point as activation_max/2, for example, if the number of activation bits is 4,
-        // then the activation_max is 2^4-1=15 and the input_zero_point is 7.
-        const uint8_t input_zero_point = activation_max / 2;
+        int8_t input_zero_point = 1;
 
-        // It is the same as input_zero_point.
-        const uint8_t kernel_zero_point = weight_max / 2;
+        int8_t kernel_zero_point = 0;
 
         for(size_t iteration = 0; iteration < iterations(); iteration++){
 
             std::generate(input.begin(), input.end(), std::ref(activation_rng));
             std::generate(kernel.begin(), kernel.end(), std::ref(weight_rng));
-            std::fill(output.begin(), output.end(), 0xA5);
-            std::fill(accumulators.begin(), accumulators.end(), 0);
+            //std::fill(input.begin(), input.end(), 2);
+            //std::fill(kernel.begin(), kernel.end(), 3);
+            std::fill(results_ref.begin(), results_ref.end(), 0);
+            std::fill(results.begin(), results.end(), 0);
+
+            quant_conv::conv_operator_t convolution;
+            // The convolution code here.
+
+            // create the conv2d pipeline here.
+            quant_conv::quant_conv2d_create_pipeline(
+                    padding_top_, padding_bottom_, padding_left_, padding_right_,
+                    kernel_height_, kernel_width_, stride_height_, stride_width_,
+                    input_channels_, output_channels_,
+                    input_zero_point, kernel_zero_point,
+                    kernel.data(), &convolution
+            );
+
+            // setup the conv2d.
+            size_t input_pixel_stride = input_channels_;
+            size_t output_pixel_stride = output_channels_;
+
+            quant_conv::quant_conv2d_setup_nhwc(convolution,
+                                                batch_size_, input_height_, input_width_, input.data(),
+                                                results.data());
+
+            quant_conv::quant_conv_run_conv(convolution);
 
             for(size_t i = 0; i < batch_size_; i++){
                 for(size_t oy = 0; oy < outputHeight(); oy++){
-                    for(size_t ox = 0; ox < outputWidth(); ox ++){
+                    for(size_t ox = 0; ox < outputWidth(); ox++){
                         for(size_t ky = 0; ky < kernel_height_; ky++){
-
-                            const size_t iy = oy * stride_height_ - padding_top_;
-
+                            const size_t iy = oy * stride_height_ + ky - padding_top_;
+                            // size_t -> uint64_t, so if iy is negative, then iy must be larger than input_height_;
                             if(iy < input_height_){
                                 for(size_t kx = 0; kx < kernel_width_; kx++){
-                                    const size_t ix = ox * stride_width_ - padding_left_;
-
+                                    const size_t ix = ox * stride_width_ + kx - padding_left_;
                                     if(ix < input_width_){
                                         for(size_t oc = 0; oc < output_channels_; oc++){
                                             for(size_t ic = 0; ic < input_channels_; ic++){
-                                                accumulators[(((i * outputHeight() + oy) * outputWidth()) + ox) * output_channels_ + oc] +=
-                                                        uint32_t(input[(((i * input_height_ + iy) * input_width_) + ix) * input_channels_ + ic]) *
-                                                        uint32_t(kernel[((oc * kernel_height_ + ky) * kernel_width_) * input_channels_ + ic]);
+                                                results_ref[(((i * outputHeight() + oy) * outputWidth()) + ox) * output_channels_ + oc] +=
+                                                        (int32_t(input[(((i * input_height_ + iy) * input_width_) + ix) * input_channels_ + ic]) - int32_t(input_zero_point)) *
+                                                        (int32_t(kernel[((oc * kernel_height_ + ky) * kernel_width_ + kx) * input_channels_ + ic]) - int32_t(kernel_zero_point));
                                             } // for ic
                                         } // for oc
                                     } // if ix
@@ -248,41 +273,25 @@ public:
                 } // for oy
             } // for i
 
-            conv_operator_t convolution;
-           // The convolution code here.
-
-           // create the conv2d pipeline here.
-           ASSERT_EQ(true, quant_conv::quant_conv2d_create_pipeline(
-                padding_top_, padding_bottom_, padding_left_, padding_right,
-                kernel_height_, kernel_width_, stride_height_, stride_width_, 
-                input_channels_, output_channels_, 
-                input_zero_point, kernel_zero_point,
-                kernel.data(), &convolution
-           ));
-
-           // setup the conv2d.
-           
-           size_t input_pixel_stride = input_channels_;
-           size_t output_pixel_stride = output_channels_;
-           ASSERT_EQ(true, quant_conv::quant_conv2d_setup_nhwc(
-               batch_size_, input_height_, input_width_, input.data(),
-               input_pixel_stride, results.data(), output_pixel_stride
-           ));
-
-           ASSERT_EQ(true, quant_conv_run_conv2d(convolution));
-        
 
             for(size_t i = 0; i < batch_size_; i ++){
                 for(size_t y = 0; y < outputHeight(); y++) {
                     for(size_t x = 0; x < outputWidth(); x++){
                         for(size_t c = 0; c < output_channels_; c++){
-                            ASSERT_EQ(accumulators[((i * outputHeight() + y) * outputWidth() + x) * output_channels_ + c], results[((i * outputHeight() + y) * outputWidth() + x) * output_channels_ + c]);
+                       //for(size_t c = 0; c < 4; c++) {
+                            const size_t index = ((i * outputHeight() + y) * outputWidth() + x) * output_channels_ + c;
+                       //     if(results_ref[index] != results[index]) {
+                       //        std::cout << results_ref[index] << "," << results[index] << ":" << x <<", " << y << "," << c << std::endl;
+                       //     }
+                            ASSERT_EQ(results_ref[index], results[index])
+                            << "y=" << y << "," << "x=" << x << "," << "c=" << c << "\n";
                         }
                     }
                 }
             }
-        }
-    }
+
+        } // for iterations.
+    } // test()
 
 private:
     uint32_t padding_top_{0};
