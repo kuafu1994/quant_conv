@@ -36,9 +36,16 @@ cmake-build-debug/
 cmake-build-release/
 build/
 
+# external project.
 googletest/
 googlebenchmark/
+pthreadpool/
+
+
+# files from gtags command
 GPATH
 GRTAGS
 GTAGS
+
+
 
