@@ -215,14 +215,14 @@ public:
 
         int8_t input_zero_point = 1;
 
-        int8_t kernel_zero_point = 0;
+        int8_t kernel_zero_point = 1;
 
         for(size_t iteration = 0; iteration < iterations(); iteration++){
 
             std::generate(input.begin(), input.end(), std::ref(activation_rng));
             std::generate(kernel.begin(), kernel.end(), std::ref(weight_rng));
             //std::fill(input.begin(), input.end(), 2);
-            //std::fill(kernel.begin(), kernel.end(), 3);
+            //std::fill(kernel.begin(), kernel.end(), 2);
             std::fill(results_ref.begin(), results_ref.end(), 0);
             std::fill(results.begin(), results.end(), 0);
 
@@ -235,7 +235,7 @@ public:
                     kernel_height_, kernel_width_, stride_height_, stride_width_,
                     input_channels_, output_channels_,
                     input_zero_point, kernel_zero_point,
-                    kernel.data(), &convolution
+                    &convolution
             );
 
             // setup the conv2d.
@@ -243,10 +243,10 @@ public:
             size_t output_pixel_stride = output_channels_;
 
             quant_conv::quant_conv2d_setup_nhwc(convolution,
-                                                batch_size_, input_height_, input_width_, input.data(),
-                                                results.data());
+                                                batch_size_, input_height_, input_width_, input.data(), kernel.data(),
+                                                results.data(), input_zero_point);
 
-            quant_conv::quant_conv_run_conv(convolution);
+            quant_conv::quant_conv_run_conv_with_packed_input(convolution);
 
             for(size_t i = 0; i < batch_size_; i++){
                 for(size_t oy = 0; oy < outputHeight(); oy++){
@@ -280,9 +280,9 @@ public:
                         for(size_t c = 0; c < output_channels_; c++){
                        //for(size_t c = 0; c < 4; c++) {
                             const size_t index = ((i * outputHeight() + y) * outputWidth() + x) * output_channels_ + c;
-                       //     if(results_ref[index] != results[index]) {
-                       //        std::cout << results_ref[index] << "," << results[index] << ":" << x <<", " << y << "," << c << std::endl;
-                       //     }
+                            if(results_ref[index] != results[index]) {
+                               std::cout << results_ref[index] << "," << results[index] << ":" << results_ref[index] - results[index] << ":" << x <<", " << y << "," << c << std::endl;
+                            }
                             ASSERT_EQ(results_ref[index], results[index])
                             << "y=" << y << "," << "x=" << x << "," << "c=" << c << "\n";
                         }

@@ -2,13 +2,15 @@
 #ifndef PACK_H
 #define PACK_H
 
-#include "math.h"
+#include "block_map.h"
+#include "pack_kernel.h"
 
 namespace quant_conv {
 
 // The original weight is CoHWCi,
 // after the packing, the layout is Co-HWCi-NrKr
-static inline void pack_weight(size_t output_channels, size_t ks, size_t input_channels, 
+#if 0
+void pack_weight(size_t output_channels, size_t ks, size_t input_channels,
                                 uint32_t nr, uint32_t kr, 
                                 int8_t izp, int8_t kzp,
                                 const int8_t* k, void* packed_w){
@@ -52,6 +54,15 @@ static inline void pack_weight(size_t output_channels, size_t ks, size_t input_c
          }   
      }    
 }
+#endif
+
+    void pack_weight(const BlockMap& block_map, const int8_t* weight, int8_t* packed_weight, int32_t* weight_sums,
+                    const int8_t input_zero_point, const int8_t kernel_zero_point,
+                    const int start, const int end, const int kernel_size, const int input_channels);
+
+    // Here, stride = kh * kw * ic;
+    void pack_input(const BlockMap& block_map, const int8_t** indirection_a, int8_t* packed_input, int32_t* input_sums,
+            const int start, const int end, const int kernel_size, const int input_channel);
 
 } // namespace quant_conv
 

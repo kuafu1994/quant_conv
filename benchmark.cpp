@@ -11,8 +11,10 @@
 #include <random>
 #include <vector>
 
-//#include "benchmark/benchmark.h"
 #include <benchmark/benchmark.h>
+
+#include "convolution.h"
+
 
 static void convolution_a1w1(benchmark::State& state, const char* net){
     const size_t batch_size = state.range(0);
@@ -42,18 +44,68 @@ static void convolution_a1w1(benchmark::State& state, const char* net){
     const size_t output_width = (padding_left + input_width + padding_right - kernel_width) / stride + 1;
 
     // generate the input.
-    std::vector<uint8_t> input(batch_size * input_height * input_width * input_channels);
+    std::vector<int8_t> input(batch_size * input_height * input_width * input_channels);
     std::generate(input.begin(), input.end(), std::ref(u8rng));
 
     // generate the kernel, the input should be OHWI
-    std::vector<uint8_t> kernel(output_channels * kernel_height * kernel_width * input_channels);
+    std::vector<int8_t> kernel(output_channels * kernel_height * kernel_width * input_channels);
     std::generate(kernel.begin(), kernel.end(), std::ref(u8rng));
 
     // generate the bias,
-    std::vector<uint8_t> output(batch_size * output_height * output_width * output_channels);
+    std::vector<int32_t> output(batch_size * output_height * output_width * output_channels);
 
-    std::cout << "out..." << std::endl;
+    int8_t input_zero_point = 1;
+    int8_t kernel_zero_point = 1;
 
+    quant_conv::conv_operator_t convolution;
+
+    bool pipeline_create = quant_conv::quant_conv2d_create_pipeline(
+            padding_top, padding_bottom, padding_left, padding_right,
+            kernel_height, kernel_width, stride, stride,
+            input_channels, output_channels,
+            input_zero_point, kernel_zero_point,
+            &convolution);
+
+    if(!pipeline_create){
+        state.SkipWithError("failed to create convolution pipeline!");
+    }
+
+    bool setup = quant_conv::quant_conv2d_setup_nhwc(convolution,
+                                        batch_size, input_height, input_width,
+                                        input.data(),
+                                        kernel.data(),
+                                        output.data(),
+                                        input_zero_point);
+
+    if(!setup){
+        state.SkipWithError("failed to setup Convolution operator");
+    }
+
+
+    for(auto _ : state){
+        auto start = std::chrono::high_resolution_clock::now();
+
+        quant_conv::quant_conv_run_conv_with_packed_input(convolution);
+
+        auto end = std::chrono::high_resolution_clock::now();
+        auto elapsed_seconds =
+                std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+
+      //  std::cout << "time: " << elapsed_seconds.count() * 1e3 << std::endl;
+        state.SetIterationTime(elapsed_seconds.count());
+    }
+
+    bool del = quant_conv::qconv_delete(convolution);
+
+    if(!del){
+        state.SkipWithError("failed to delete the operator");
+    }
+
+    state.SetItemsProcessed(
+            uint64_t(state.iterations()) * 2 *
+            batch_size * output_height * output_width
+             * input_channels * output_channels *
+            kernel_height * kernel_width);
 }
 
 
@@ -142,47 +194,56 @@ static void VGG(benchmark::internal::Benchmark* b) {
 
     /********************* Conv 1.1 ********************/
     /*b, h, w, kh, kw, s, ci, co*/
-    b->Args({1, 224, 224,  3,  3, 1, 3, 64});
+   // b->Args({1, 224, 224,  3,  3, 1, 3, 64});
     /********************* Conv 1.2 ********************/
     /*b, h, w, kh, kw, s, ci, co*/
     b->Args({1, 224, 224,  3,  3, 1, 64, 64});
+
+    b->Args({1, 224, 224, 3, 3, 1, 64, 128});
 
     /********************* Conv 2.1 ********************/
     /*b, h, w, kh, kw, s, ci, co*/
     b->Args({1, 112, 112,  3,  3, 1, 64, 128});
     /********************* Conv 2.2 ********************/
     /*b, h, w, kh, kw, s, ci, co*/
-    b->Args({1, 112, 112,  3,  3, 1, 128, 128});
+    b->Args({1, 112, 112,  3,  3, 1, 128, 256});
 
     /********************* Conv 3.1 ********************/
     /*b, h, w, kh, kw, s, ci, co*/
-    b->Args({1,  56,  56,  3,  3, 1, 128, 256});
+    b->Args({1,  56,  56,  3,  3, 1, 256, 256});
     /********************* Conv 3.2 ********************/
     /*b, h, w, kh, kw, s, ci, co*/
     b->Args({1,  56,  56,  3,  3, 1, 256, 256});
     /********************* Conv 3.3 ********************/
 
-    b->Args({1,  56,  56,  1,  1, 1, 256, 256});
+    b->Args({1,  56,  56,  1,  1, 1, 256, 512});
 
     /********************* Conv 4.1 ********************/
 
-    b->Args({1,  28,  28,  3,  3, 1, 256, 512});
+    b->Args({1,  28,  28,  3,  3, 1, 512, 512});
     /********************* Conv 4.2 ********************/
 
     b->Args({1,  28,  28,  3,  3, 1, 512, 512});
     /********************* Conv 4.3 ********************/
 
-    b->Args({1,  28,  28,  1,  1, 1, 512, 512});
+    b->Args({1,  28,  28,  3,  3, 1, 512, 512});
+
+    b->Args({1, 28, 28, 3, 3, 1, 512, 512});
+
+
 
     /********************* Conv 5.X ********************/
 
     b->Args({1,  14,  14,  3,  3, 1, 512,  512});
     /********************* Conv 5.3 ********************/
 
-    b->Args({1,  14,  14,  1,  1, 1, 512,  512});
+    b->Args({1,  14,  14,  3,  3, 1, 512,  512});
+
+    b->Args({1, 14, 14, 3, 3, 1, 512, 512});
+    b->Args({1, 14, 14, 3, 3, 1, 512, 512});
 }
 
-BENCHMARK_CAPTURE(convolution_a1w1, vgg, "VGG")->Apply(VGG);
+BENCHMARK_CAPTURE(convolution_a1w1, vgg, "VGG")->Apply(VGG)->Unit(benchmark::kMillisecond);
 
 BENCHMARK_MAIN();
 

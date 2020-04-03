@@ -44,7 +44,12 @@ SET(GOOGLEBENCHMARK_SOURCE_DIR "${CMAKE_SOURCE_DIR}/googlebenchmark" CACHE STRIN
 SET(QUANTCONV_SRCS
         convolution.cpp indirection.cpp
         convolution_quant.cpp
-        kernel_aarch64_neon.cpp)
+        kernel_aarch64_neon.cpp
+        kernel_pack.cpp
+        block_map.cpp
+        pair.cpp
+        pack_kernel.cpp
+        pack.cpp)
 
 # --- [build thread pool]
 
