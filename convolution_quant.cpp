@@ -164,7 +164,7 @@ namespace quant_conv {
 
         int depth = kernel_size * input_channels;
 
-        std::cout << "The number of blocks is " << nb << std::endl;
+        //std::cout << "The number of blocks is " << nb << std::endl;
         while(block_id < nb){
 
             get_block_by_index(block_map, block_id, &block);
@@ -172,8 +172,6 @@ namespace quant_conv {
 
             pack_input(block_map, indirection_a, packed_input, input_sums,
                     start[Side::kLhs], end[Side::kLhs], kernel_size, input_channels);
-
-
 
             compute_quant_kernel_with_packed_input_a7w7(
                     packed_input + start[Side::kLhs] * depth, // The start position of packed_input
@@ -186,8 +184,6 @@ namespace quant_conv {
                     start[Side::kRhs], end[Side::kRhs],
                     neon_params
             );
-
-
 
             block_id += 1;
 

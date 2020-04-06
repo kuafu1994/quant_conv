@@ -15,6 +15,19 @@ namespace quant_conv {
 #define STRING(s) STR_UNEXPANDED(s)
 #define STR_UNEXPANDED(s) #s
 
+
+    void compute_quant_kernel_with_packed_input_a7w7_2(
+            const int8_t* packed_input, // packed_input
+            const int32_t* input_sums, // input_sums
+            const int8_t* packed_weight, // packed weight
+            const int32_t* weight_sums,
+            int32_t* c, // output
+            size_t kc, size_t ks, size_t c_stride,
+            const int start_row, const int end_row,
+            const int start_col, const int end_col,
+            struct qconv_neon_params qconv_params
+    );
+
     void compute_quant_kernel(
             size_t mr,
             size_t nr,

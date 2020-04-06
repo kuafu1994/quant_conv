@@ -47,7 +47,7 @@ namespace quant_conv {
 
     void get_block_matrix_coords(const BlockMap& block_map, const Pair<int>& block, Pair<int>*start, Pair<int> *end);
 
-    void make_block_map(const int rows, const int cols, const int kernel_rows,
+    void make_block_map(const int rows, const int cols, const int depth, const int kernel_rows,
                         const int kernel_cols, const int tentative_thread_count, BlockMap *block_map) ;
 
     inline int num_blocks(const BlockMap &block_map) {

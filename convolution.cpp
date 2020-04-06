@@ -28,6 +28,7 @@ static inline size_t compute_output_dimension(
 
 
 // TOOD: should template it.
+
 bool quant_conv2d_create_pipeline(
     uint32_t padded_top, uint32_t padded_bottom, uint32_t padded_left, uint32_t padded_right, 
     uint32_t kernel_height, uint32_t kernel_width, uint32_t stride_height, uint32_t stride_width,
@@ -125,7 +126,7 @@ bool quant_conv2d_setup_nhwc(conv_operator_t convolution,
         const size_t output_width = convolution->output_width;
         const size_t output_size = output_height * output_width;
         const size_t output_channels = convolution->output_channels;
-
+        const size_t depth = kernel_size * input_channels;
         const size_t output_tile_size = 4;  // mr
 
         const size_t tiled_output_size = round_up(output_size, output_tile_size);
@@ -169,7 +170,7 @@ bool quant_conv2d_setup_nhwc(conv_operator_t convolution,
         }
 
         // make the block map for the output to compute.
-        make_block_map(output_size, output_channels, convolution->kernel_rows, convolution->kernel_cols, 1, convolution->block_map);
+        make_block_map(output_size, output_channels, depth, convolution->kernel_rows, convolution->kernel_cols, 1, convolution->block_map);
 
         const uint32_t nr = 4;
         const uint32_t kr = 16;

@@ -54,7 +54,8 @@ typedef struct conv_operator {
 
     int thread_count;
 
-
+    int activation_bits;
+    int weight_bits;
 
 } conv_operator;
 
@@ -76,6 +77,8 @@ typedef conv_operator* conv_operator_t;
                                  const int8_t* kernel,
                                  int32_t* output,
                                  const int8_t input_zero_point);
+
+
 
 bool quant_conv_run_conv(conv_operator_t op);
 bool quant_conv_run_conv_reference(conv_operator_t op);

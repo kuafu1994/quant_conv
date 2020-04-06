@@ -9,18 +9,18 @@
 TEST(VGG, CONV2) {
 
     ConvolutionOperatorTester()
-    .inputSize(4,4)
+    .inputSize(224,224)
     .padding(1)
     .kernelSize(3)
     .inputChannels(64)
     .outputChannels(64)
     .iterations(1)
-    .activationBits(7)
-    .weightBits(7)
+    .activationBits(8)
+    .weightBits(8)
     .test();
 }
 
-#if 0
+
 
 
 TEST(VGG, CONV3) {
@@ -166,4 +166,5 @@ TEST(VGG, CONV12) {
             .weightBits(7)
             .test();
 }
-#endif
+
+

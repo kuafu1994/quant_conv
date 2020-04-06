@@ -55,6 +55,39 @@ namespace quant_conv {
     }
 
 
+    int get_cache_locality_score(int block_size_log2, int rows, int cols, int depth, int kernel_rows_log2, int kernel_cols_log2) {
+
+
+        if(rows <= (1 << kernel_rows_log2) || cols <= (1 << kernel_cols_log2)){
+            return 0;
+        }
+
+        const int block_rows = std::min(1 << block_size_log2, rows);
+        const int block_cols = std::min(1 << block_size_log2, cols);
+
+        const int kLocalDataCacheSizeLog2 = 15;
+
+        const int lhs_bytes_log2 = pot_log2(1) + ceil_log2(block_rows * depth);
+        const int rhs_bytes_log2 = pot_log2(1) + ceil_log2(block_cols * depth);
+
+        const int total_bytes_log2 = 1 + std::max(lhs_bytes_log2, rhs_bytes_log2);
+        const int nonlocality_log2 = total_bytes_log2 - kLocalDataCacheSizeLog2;
+
+        if(nonlocality_log2 < -1){
+            return 64;
+        } else if(nonlocality_log2 == -1){
+            return 56;
+        } else if(nonlocality_log2 == 0) {
+            return 48;
+        } else if(nonlocality_log2 == 1){
+            return 32;
+        } else if(nonlocality_log2 == 2){
+            return 0;
+        } else {
+            return -64;
+        }
+    }
+
 
     void get_block_matrx_coords(Side side, const BlockMap& block_map, const int block, int* start, int* end){
 
@@ -183,7 +216,7 @@ namespace quant_conv {
     // rows: the number of rows in the output matrix;
     // cols: the number of cols in the output matrix;
     // The kernel_rows is 4 and kernel_cols is 4 in most cases.
-    void make_block_map(const int rows, const int cols, const int kernel_rows,
+    void make_block_map(const int rows, const int cols, const int depth, const int kernel_rows,
                         const int kernel_cols, const int tentative_thread_count,
                         BlockMap *block_map) {
 
@@ -218,12 +251,12 @@ namespace quant_conv {
         for (int block_size_log2 = kernel_size_log2; block_size_log2 <= max_block_size_log2; block_size_log2++) {
             const int multithreading_score = GetMultithreadingScore(block_size_log2, rows, cols,
                                                                     tentative_thread_count);
-            //    const int cache_locality_score = GetCacheLocalityScore(
-            //            block_size_log2, rows, cols, depth, kernel_rows_log2, kernel_cols_log2,
-            //            lhs_scalar_size, rhs_scalar_size, path);
+            const int cache_locality_score = get_cache_locality_score(
+                      block_size_log2, rows, cols, depth, kernel_rows_log2, kernel_cols_log2);
             const int kernel_amortization_score = GetKernelAmortizationScore(block_size_log2, rows, cols,
                                                                              kernel_rows_log2, kernel_cols_log2);
-            const int score = multithreading_score + kernel_amortization_score;
+           const int score = multithreading_score + kernel_amortization_score;
+            //const int score = cache_locality_score + kernel_amortization_score;
 
             if (score > best_score) {
                 best_score = score;

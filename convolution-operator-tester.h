@@ -221,8 +221,6 @@ public:
 
             std::generate(input.begin(), input.end(), std::ref(activation_rng));
             std::generate(kernel.begin(), kernel.end(), std::ref(weight_rng));
-            //std::fill(input.begin(), input.end(), 2);
-            //std::fill(kernel.begin(), kernel.end(), 2);
             std::fill(results_ref.begin(), results_ref.end(), 0);
             std::fill(results.begin(), results.end(), 0);
 
@@ -278,11 +276,7 @@ public:
                 for(size_t y = 0; y < outputHeight(); y++) {
                     for(size_t x = 0; x < outputWidth(); x++){
                         for(size_t c = 0; c < output_channels_; c++){
-                       //for(size_t c = 0; c < 4; c++) {
                             const size_t index = ((i * outputHeight() + y) * outputWidth() + x) * output_channels_ + c;
-                            if(results_ref[index] != results[index]) {
-                               std::cout << results_ref[index] << "," << results[index] << ":" << results_ref[index] - results[index] << ":" << x <<", " << y << "," << c << std::endl;
-                            }
                             ASSERT_EQ(results_ref[index], results[index])
                             << "y=" << y << "," << "x=" << x << "," << "c=" << c << "\n";
                         }

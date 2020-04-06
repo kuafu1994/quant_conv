@@ -5,7 +5,7 @@
 #include "pack_kernel.h"
 
 namespace quant_conv {
-    void pack_8bit_neon_input(const int8_t **indirection_a, const int input_channel, const int kernel_size,
+  void pack_8bit_neon_input(const int8_t **indirection_a, const int input_channel, const int kernel_size,
                               int8_t *packed_ptr, int32_t *sums_ptr) {
 
 
