@@ -22,7 +22,6 @@ TEST(VGG, CONV2) {
 
 
 
-
 TEST(VGG, CONV3) {
 
     ConvolutionOperatorTester()
@@ -32,8 +31,8 @@ TEST(VGG, CONV3) {
             .inputChannels(64)
             .outputChannels(128)
             .iterations(3)
-            .activationBits(7)
-            .weightBits(7)
+            .activationBits(8)
+            .weightBits(8)
             .test();
 }
 
@@ -46,8 +45,8 @@ TEST(VGG, CONV4) {
             .inputChannels(128)
             .outputChannels(128)
             .iterations(3)
-            .activationBits(7)
-            .weightBits(7)
+            .activationBits(8)
+            .weightBits(8)
             .test();
 }
 
@@ -60,8 +59,8 @@ TEST(VGG, CONV5) {
             .inputChannels(128)
             .outputChannels(256)
             .iterations(3)
-            .activationBits(7)
-            .weightBits(7)
+            .activationBits(8)
+            .weightBits(8)
             .test();
 }
 
@@ -75,8 +74,8 @@ TEST(VGG, CONV6) {
             .inputChannels(256)
             .outputChannels(256)
             .iterations(3)
-            .activationBits(7)
-            .weightBits(7)
+            .activationBits(8)
+            .weightBits(8)
             .test();
 }
 
@@ -91,8 +90,8 @@ TEST(VGG, CONV7) {
             .inputChannels(256)
             .outputChannels(256)
             .iterations(3)
-            .activationBits(7)
-            .weightBits(7)
+            .activationBits(8)
+            .weightBits(8)
             .test();
 }
 
@@ -105,8 +104,8 @@ TEST(VGG, CONV8) {
             .inputChannels(256)
             .outputChannels(512)
             .iterations(3)
-            .activationBits(7)
-            .weightBits(7)
+            .activationBits(8)
+            .weightBits(8)
             .test();
 }
 
@@ -119,8 +118,8 @@ TEST(VGG, CONV9) {
             .inputChannels(512)
             .outputChannels(512)
             .iterations(3)
-            .activationBits(7)
-            .weightBits(7)
+            .activationBits(8)
+            .weightBits(8)
             .test();
 }
 
@@ -133,8 +132,8 @@ TEST(VGG, CONV10) {
             .inputChannels(512)
             .outputChannels(512)
             .iterations(3)
-            .activationBits(7)
-            .weightBits(7)
+            .activationBits(8)
+            .weightBits(8)
             .test();
 }
 
@@ -148,8 +147,8 @@ TEST(VGG, CONV11) {
             .inputChannels(512)
             .outputChannels(512)
             .iterations(3)
-            .activationBits(7)
-            .weightBits(7)
+            .activationBits(8)
+            .weightBits(8)
             .test();
 }
 
@@ -162,9 +161,10 @@ TEST(VGG, CONV12) {
             .inputChannels(512)
             .outputChannels(512)
             .iterations(3)
-            .activationBits(7)
-            .weightBits(7)
+            .activationBits(8)
+            .weightBits(8)
             .test();
 }
+
 
 

@@ -3,9 +3,11 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.5 FATAL_ERROR)
 
 project(quant_conv C CXX ASM)
 
-set(ENV{HTTP_PROXY} "http://proxy.cse.cuhk.edu.hk:8000")
-SET(ENV{HTTPS_PROXY} "http://proxy.cse.cuhk.edu.hk:8000")
+#set(ENV{HTTP_PROXY} "http://proxy.cse.cuhk.edu.hk:8000")
+#SET(ENV{HTTPS_PROXY} "http://proxy.cse.cuhk.edu.hk:8000")
 set(CMAKE_CXX_STANDARD 11)
+
+set(CMAKE_CXX_FLAGS "-fopenmp")
 
 
 ENABLE_TESTING()

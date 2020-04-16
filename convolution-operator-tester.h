@@ -194,10 +194,10 @@ public:
         auto rng = std::mt19937(rd());
 
         int32_t activation_max = (1 << activation_bits_ - 1) - 1;
-        int32_t activation_min = -activation_max;
+        int32_t activation_min = -activation_max - 1;
         int32_t weight_max = (1 << weight_bits_ - 1) - 1;
-        int32_t weight_min = -weight_max;
-        auto activation_rng = std::bind(std::uniform_int_distribution<int8_t>( activation_min, activation_max), rng);
+        int32_t weight_min = -weight_max - 1;
+        auto activation_rng = std::bind(std::uniform_int_distribution<int8_t>(activation_min, activation_max), rng);
         auto weight_rng = std::bind(std::uniform_int_distribution<int8_t>(weight_min, weight_max), rng);
 
         // Here, we assume that the storage layout of input is HWC.

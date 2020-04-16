@@ -85,5 +85,7 @@ bool quant_conv_run_conv_reference(conv_operator_t op);
 bool quant_conv_run_conv_with_packed_input(conv_operator_t op);
 bool qconv_delete(conv_operator_t convolution);
 
+bool quant_conv_run_conv_with_packed_input_no_block_map(conv_operator_t op);
+
 } // namespace quant_conv
 #endif 

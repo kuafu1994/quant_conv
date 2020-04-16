@@ -31,7 +31,7 @@ static void convolution_a1w1(benchmark::State& state, const char* net){
     auto rng = std::mt19937(rd());
 
     // u8rng will produce binary value between 0 and 1.
-    auto u8rng = std::bind(std::uniform_int_distribution<uint8_t>(0, 1), rng);
+    auto u8rng = std::bind(std::uniform_int_distribution<int8_t>(-2, 1), rng);
 
     // define the padding
     const size_t padding_left = kernel_width / 2;
@@ -114,7 +114,7 @@ static void ResNet18(benchmark::internal::Benchmark* b) {
 
     /********************* Conv 1 *********************/
     /*       N   H    W   KH  KW  S  Cin  GCout */
-    b->Args({1, 224, 224,  7,  7, 2, 3,  64});
+    //b->Args({1, 224, 224,  7,  7, 2, 3,  64});
     /******************** Conv 2.X ********************/
     /*       N   H    W   KH  KW  S  Cin  Cout */
     b->Args({1,  56,  56,  3,  3, 1, 64,  64});
@@ -130,9 +130,9 @@ static void ResNet18(benchmark::internal::Benchmark* b) {
     b->Args({1,  28,  28,  1,  1, 2, 128,  256});
     /******************** Conv 5.X ********************/
     /*       N   H    W   KH  KW  S  Cin  Cout */
-    b->Args({1,  14,  14,  3,  3, 2, 256,  512});
-    b->Args({1,   7,   7,  3,  3, 1, 512,  512});
-    b->Args({1,  14,  14,  1,  1, 2, 256,  512});
+    b->Args({1,  16,  16,  3,  3, 2, 256,  512});
+    b->Args({1,   8,   8,  3,  3, 1, 512,  512});
+    b->Args({1,  16,  16,  1,  1, 2, 256,  512});
 }
 
 
@@ -216,7 +216,7 @@ static void VGG(benchmark::internal::Benchmark* b) {
     b->Args({1,  56,  56,  3,  3, 1, 256, 256});
     /********************* Conv 3.3 ********************/
 
-    b->Args({1,  56,  56,  1,  1, 1, 256, 512});
+    b->Args({1,  56,  56,  3,  3, 1, 256, 512});
 
     /********************* Conv 4.1 ********************/
 
@@ -243,7 +243,7 @@ static void VGG(benchmark::internal::Benchmark* b) {
     b->Args({1, 14, 14, 3, 3, 1, 512, 512});
 }
 
-BENCHMARK_CAPTURE(convolution_a1w1, vgg, "VGG")->Apply(VGG)->Unit(benchmark::kMillisecond);
+BENCHMARK_CAPTURE(convolution_a1w1, resnet18, "VGG")->Apply(ResNet18);
 
 BENCHMARK_MAIN();
 

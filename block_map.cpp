@@ -7,7 +7,7 @@
 #include <vector>
 #include <assert.h>
 #include <limits>
-
+#include <iostream>
 #include <stdint.h>
 
 namespace quant_conv {
@@ -265,6 +265,10 @@ namespace quant_conv {
         }
 
         int num_blocks_base_log2 = size_log2 - best_score_block_size_log2;
+
+      //
+      // std::cout << "The num blocks base log2 " << num_blocks_base_log2 << std::endl;
+       // num_blocks_base_log2 = 0;
         assert(num_blocks_base_log2 >= 0);
 
         const int num_blocks_of_rows_log2 =

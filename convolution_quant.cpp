@@ -15,6 +15,8 @@
 #include "pack.h"
 #include "block_map.h"
 
+#include <omp.h>
+
 namespace quant_conv {
 
 #if 0 
@@ -135,7 +137,63 @@ namespace quant_conv {
 
 #endif
 
-    bool quant_conv_run_conv_with_packed_input(conv_operator_t op)
+    bool quant_conv_run_conv_with_packed_input(conv_operator_t op) {
+
+        const BlockMap &block_map = *(op->block_map);
+
+        const qconv_neon_params neon_params = (qconv_neon_params) {
+                .kernel_zero_point = op->kernel_zero_point
+        };
+        const int nb = num_blocks(block_map); // nb: num_blocks
+        //bool* local_packed = (bool*) malloc(nb * sizeof(bool));
+
+
+        const int8_t **indirection_a = (const int8_t **) op->indirection_buffer;
+        int8_t *packed_input = op->packed_input;
+        int32_t *input_sums = op->input_sums;
+        int8_t *packed_weight = (int8_t *) op->packed_weight;
+        int32_t *weight_sums = op->weight_sums;
+        int kernel_size = op->kernel_height * op->kernel_width;
+        int input_channels = op->input_channels;
+        int output_channels = op->output_channels;
+
+        int32_t *output = (int32_t *) op->output;
+
+
+        int depth = kernel_size * input_channels;
+
+        //std::cout << "The number of blocks is " << nb << std::endl;
+        //while (block_id < nb) {
+
+#pragma omp parallel for num_threads(4)
+        for(int block_id = 0; block_id < nb; block_id ++) {
+
+            Pair<int> block;
+            Pair<int> start;
+            Pair<int> end;
+
+            get_block_by_index(block_map, block_id, &block);
+            get_block_matrix_coords(block_map, block, &start, &end);
+
+            pack_input(block_map, indirection_a, packed_input, input_sums,
+                       start[Side::kLhs], end[Side::kLhs], kernel_size, input_channels);
+
+            compute_quant_kernel_with_packed_input_a2w2(
+                    packed_input + start[Side::kLhs] * depth, // The start position of packed_input
+                    input_sums + start[Side::kLhs], // The start position of input_sums
+                    packed_weight + start[Side::kRhs] * depth, // The start position of packed weight
+                    weight_sums + start[Side::kRhs], // The start position of weight sums.
+                    output + start[Side::kLhs] * output_channels + start[Side::kRhs], // The start position of output
+                    input_channels, kernel_size, output_channels,
+                    start[Side::kLhs], end[Side::kLhs],
+                    start[Side::kRhs], end[Side::kRhs],
+                    neon_params
+            );
+        }
+
+    }
+
+    bool quant_conv_run_conv_with_packed_input_no_block_map(conv_operator_t op)
     {
 
         const BlockMap& block_map = *(op->block_map);
@@ -143,7 +201,8 @@ namespace quant_conv {
         const qconv_neon_params neon_params = (qconv_neon_params){
                 .kernel_zero_point = op->kernel_zero_point
         };
-        const int nb = num_blocks(block_map); // nb: num_blocks
+
+        //const int nb = num_blocks(block_map); // nb: num_blocks
         //bool* local_packed = (bool*) malloc(nb * sizeof(bool));
 
         Pair<int> block;
@@ -158,6 +217,7 @@ namespace quant_conv {
         int kernel_size = op->kernel_height * op->kernel_width;
         int input_channels = op->input_channels;
         int output_channels = op->output_channels;
+        int output_size = op->output_height * op->output_width;
 
         int32_t* output = (int32_t*) op->output;
         int block_id = 0;
@@ -165,15 +225,21 @@ namespace quant_conv {
         int depth = kernel_size * input_channels;
 
         //std::cout << "The number of blocks is " << nb << std::endl;
-        while(block_id < nb){
+        while(block_id < output_size / 4){
 
-            get_block_by_index(block_map, block_id, &block);
-            get_block_matrix_coords(block_map, block, &start, &end);
+           // get_block_by_index(block_map, block_id, &block);
+           // get_block_matrix_coords(block_map, block, &start, &end);
+
+            start[Side::kLhs] = block_id * 4;
+            start[Side::kRhs] = 0;
+
+            end[Side::kLhs] = start[Side::kLhs] + 4;
+            end[Side::kRhs] = output_channels;
 
             pack_input(block_map, indirection_a, packed_input, input_sums,
-                    start[Side::kLhs], end[Side::kLhs], kernel_size, input_channels);
+                       start[Side::kLhs], end[Side::kLhs], kernel_size, input_channels);
 
-            compute_quant_kernel_with_packed_input_a7w7(
+            compute_quant_kernel_with_packed_input_a2w2(
                     packed_input + start[Side::kLhs] * depth, // The start position of packed_input
                     input_sums + start[Side::kLhs], // The start position of input_sums
                     packed_weight + start[Side::kRhs] * depth, // The start position of packed weight
@@ -184,12 +250,7 @@ namespace quant_conv {
                     start[Side::kRhs], end[Side::kRhs],
                     neon_params
             );
-
             block_id += 1;
-
         }
-
-
     }
-
 } // namespace quant_conv
